@@ -1,0 +1,1 @@
+console.log("hello amf0 and amf3")
