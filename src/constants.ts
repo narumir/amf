@@ -1,0 +1,27 @@
+export enum AMFEncoding {
+    AMF_0 = 0,
+    AMF_3 = 3,
+}
+
+export enum AMF0TypeMarker {
+    NUMBER_MARKER = 0x00,
+    BOOLEAN_MARKER = 0x01,
+    STRING_MARKER = 0x02,
+    OBJECT_MARKER = 0x03,
+    MOVIECLIP_MARKER = 0x04, // 예약됨, 미지원
+    NULL_MARKER = 0x05,
+    UNDEFINED_MARKER = 0x06,
+    REFERENCE_MARKER = 0x07,
+    ECMA_ARRAY_MARKER = 0x08,
+    OBJECT_END_MARKER = 0x09,
+    STRICT_ARRAY_MARKER = 0x0a,
+    DATE_MARKER = 0x0b,
+    LONG_STRING_MARKER = 0x0c,
+    UNSUPPORT_MARKER = 0x0d,
+    RECOREDSET_MARKER = 0x0e, // 예약됨, 미지원
+    XML_DOCUMENT_MARKER = 0x0F,
+    TYPED_OBJECT_MARKER = 0x10,
+    AVMPLUS_OBJECT_MARKER = 0x11,
+}
+
+export const AMF0_NORMAL_STRING_SIZE = 65536;

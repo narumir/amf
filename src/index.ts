@@ -1,1 +1,6 @@
-console.log("hello amf0 and amf3")
+export {
+    AMFEncoding,
+} from "./constants";
+export {
+    AMFSerialize,
+} from "./serialize";
