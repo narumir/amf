@@ -24,4 +24,4 @@ export enum AMF0TypeMarker {
     AVMPLUS_OBJECT_MARKER = 0x11,
 }
 
-export const AMF0_NORMAL_STRING_SIZE = 65536;
+export const AMF0_NORMAL_MAX_SIZE = 65536;

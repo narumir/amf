@@ -1,11 +1,12 @@
 import {
     AMF0TypeMarker,
-    AMF0_NORMAL_STRING_SIZE,
+    AMF0_NORMAL_MAX_SIZE,
     AMFEncoding,
 } from "./constants";
 
 export class AMFSerialize {
     private buffer = Buffer.alloc(0);
+    private references: any[] = [];
 
     constructor(data: any, private encoding: AMFEncoding) {
         this.writeData(data);
@@ -29,13 +30,18 @@ export class AMFSerialize {
             return AMF0TypeMarker.NULL_MARKER;
         }
         if (typeof data === "string") {
-            return data.length > AMF0_NORMAL_STRING_SIZE
+            return data.length > AMF0_NORMAL_MAX_SIZE
                 ? AMF0TypeMarker.LONG_STRING_MARKER
                 : AMF0TypeMarker.STRING_MARKER;
         }
         if (typeof data === "object") {
             if (data instanceof Date) {
                 return AMF0TypeMarker.DATE_MARKER;
+            }
+            if (data?.hasOwnProperty("constructor")) {
+                if (data.constructor.name != null && typeof data.constructor.name === "string") {
+                    return AMF0TypeMarker.TYPED_OBJECT_MARKER;
+                }
             }
             return AMF0TypeMarker.OBJECT_MARKER;
         }
@@ -47,43 +53,123 @@ export class AMFSerialize {
     }
 
     private writeNumberMarker(data: number) {
+        this.writeUInt8(AMF0TypeMarker.NUMBER_MARKER);
         const buf = Buffer.alloc(8);
         buf.writeDoubleBE(data);
         this.buffer = Buffer.concat([this.buffer, buf]);
     }
 
     private writeBooleanMarker(data: boolean) {
+        this.writeUInt8(AMF0TypeMarker.BOOLEAN_MARKER);
         const buf = Buffer.alloc(1, 0);
         buf.writeUint8(data ? 1 : 0);
         this.buffer = Buffer.concat([this.buffer, buf]);
     }
 
-    private writeStringMarker(data: string) {
-        this.writeUint16(data.length);
+    private writeStringMarker(data: string, withMarker: boolean = true) {
+        if (withMarker) {
+            this.writeUInt8(AMF0TypeMarker.STRING_MARKER);
+        }
+        this.writeUInt16(data.length);
         this.writeBuffer(data);
     }
 
     private writeObjectMarker(data: any) {
+        this.writeUInt8(AMF0TypeMarker.OBJECT_MARKER);
         for (let key in data) {
-            this.writeStringMarker(key);
+            this.writeStringMarker(key, false);
             this.writeData(data[key]);
         }
-        this.writeStringMarker("");
+        this.writeStringMarker("", false);
         this.writeObjectEndMarker();
+    }
+
+    private writeNullMarker() {
+        this.writeUInt8(AMF0TypeMarker.NULL_MARKER);
+    }
+
+    private writeUndefinedMarker() {
+        this.writeUInt8(AMF0TypeMarker.UNDEFINED_MARKER);
+    }
+
+    private writeReferenceMarker(data: any) {
+        this.writeUInt8(AMF0TypeMarker.REFERENCE_MARKER);
+        const idx = this.references.indexOf(data);
+        if (idx === -1) {
+            this.references.push(data);
+        }
+        if (idx > AMF0_NORMAL_MAX_SIZE) {
+            throw new Error("Out of Reference range.");
+        }
+        this.writeUInt16(idx);
+    }
+
+    private writeECMAArrayMarker(data: any) {
+        const idx = this.references.indexOf(data);
+        if (idx >= 0) {
+            this.writeReferenceMarker(data);
+        }
+        this.references.push(data);
+        this.writeUInt8(AMF0TypeMarker.ECMA_ARRAY_MARKER);
+        this.writeUInt32(data.length);
+        for (const key in data) {
+            this.writeStringMarker(key, false);
+            this.writeData(data[key]);
+        }
+        this.writeUInt16(0);
+        this.writeUInt8(AMF0TypeMarker.OBJECT_END_MARKER);
     }
 
     private writeObjectEndMarker() {
         this.writeUInt8(AMF0TypeMarker.OBJECT_END_MARKER);
     }
 
+    private writeStrictArrayMarker(data: any) {
+        const idx = this.references.indexOf(data);
+        if (idx >= 0) {
+            this.writeReferenceMarker(data);
+        }
+        this.references.push(data);
+        this.writeUInt8(AMF0TypeMarker.STRICT_ARRAY_MARKER);
+        this.writeUInt32(data.length);
+        for (const key in data) {
+            this.writeStringMarker(key, false);
+            this.writeData(data[key]);
+        }
+        this.writeUInt16(0);
+        this.writeUInt8(AMF0TypeMarker.OBJECT_END_MARKER);
+    }
+
     private writeDateMarker(data: Date) {
+        this.writeUInt8(AMF0TypeMarker.DATE_MARKER);
         this.writeNumberMarker(data.getTime());
-        this.writeUint16(0);
+        this.writeUInt16(0);
     }
 
     private writeLongStringMarker(data: string) {
-        this.writeUint16(data.length);
+        this.writeUInt8(AMF0TypeMarker.LONG_STRING_MARKER);
+        this.writeUInt16(data.length);
         this.writeBuffer(data);
+    }
+
+    private writeUnsupportMarker() {
+        this.writeUInt8(AMF0TypeMarker.UNSUPPORT_MARKER);
+    }
+
+    private writeTypedObjectMarker(data: any) {
+        const idx = this.references.indexOf(data);
+        if (idx >= 0) {
+            this.writeReferenceMarker(data);
+        }
+        this.references.push(data);
+        this.writeUInt8(AMF0TypeMarker.TYPED_OBJECT_MARKER);
+        this.writeStringMarker(data.constructor.name, false);
+        for (const key in data) {
+            this.writeStringMarker(key, false);
+            this.writeData(data[key]);
+        }
+        this.writeUInt16(0);
+        this.writeUInt8(AMF0TypeMarker.OBJECT_END_MARKER);
     }
 
     private writeData(data: any) {
@@ -91,7 +177,6 @@ export class AMFSerialize {
             ? this.getAMF0Type(data)
             : this.getAMF3Type(data);
         if (this.encoding === AMFEncoding.AMF_0) {
-            this.writeUInt8(type);
             switch (type) {
                 case AMF0TypeMarker.NUMBER_MARKER:
                     return this.writeNumberMarker(data);
@@ -104,34 +189,29 @@ export class AMFSerialize {
                 case AMF0TypeMarker.MOVIECLIP_MARKER:
                     return;
                 case AMF0TypeMarker.NULL_MARKER:
-                    return;
+                    return this.writeNullMarker();
                 case AMF0TypeMarker.UNDEFINED_MARKER:
-                    return;
+                    return this.writeUndefinedMarker();
                 case AMF0TypeMarker.REFERENCE_MARKER:
-                    // TODO
-                    return;
+                    return this.writeReferenceMarker(data);
                 case AMF0TypeMarker.ECMA_ARRAY_MARKER:
-                    // TODO
-                    return;
+                    return this.writeECMAArrayMarker(data);
                 case AMF0TypeMarker.OBJECT_END_MARKER:
                     return this.writeObjectEndMarker();
                 case AMF0TypeMarker.STRICT_ARRAY_MARKER:
-                    // TODO
-                    return;
+                    return this.writeStrictArrayMarker(data);
                 case AMF0TypeMarker.DATE_MARKER:
                     return this.writeDateMarker(data);
                 case AMF0TypeMarker.LONG_STRING_MARKER:
                     return this.writeLongStringMarker(data);
                 case AMF0TypeMarker.UNSUPPORT_MARKER:
-                    return;
+                    return this.writeUnsupportMarker();
                 case AMF0TypeMarker.RECOREDSET_MARKER:
                     return;
                 case AMF0TypeMarker.XML_DOCUMENT_MARKER:
-                    // TODO    
-                    return;
+                    throw new Error("Sorry. XML type not support.");
                 case AMF0TypeMarker.TYPED_OBJECT_MARKER:
-                    // TODO
-                    return;
+                    return this.writeTypedObjectMarker(data);
                 case AMF0TypeMarker.AVMPLUS_OBJECT_MARKER:
                     // TODO
                     return;
@@ -147,9 +227,15 @@ export class AMFSerialize {
         this.buffer = Buffer.concat([this.buffer, buf]);
     }
 
-    private writeUint16(data: number) {
+    private writeUInt16(data: number) {
         const buf = Buffer.alloc(2, 0);
         buf.writeUint16BE(data);
+        this.buffer = Buffer.concat([this.buffer, buf]);
+    }
+
+    private writeUInt32(data: number) {
+        const buf = Buffer.alloc(4, 0);
+        buf.writeUint32BE(data);
         this.buffer = Buffer.concat([this.buffer, buf]);
     }
 
