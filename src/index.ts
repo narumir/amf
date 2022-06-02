@@ -1,6 +1,7 @@
 export {
-    AMFEncoding,
+    AMF0Type,
+    AMF0Marker
 } from "./constants";
 export {
-    AMFSerialize,
+    AMF0Serialize
 } from "./serialize";
