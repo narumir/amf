@@ -3,7 +3,7 @@ export enum AMFEncoding {
     AMF_3 = 3,
 }
 
-export enum AMF0TypeMarker {
+export enum AMF0DataType {
     NUMBER_MARKER = 0x00,
     BOOLEAN_MARKER = 0x01,
     STRING_MARKER = 0x02,
