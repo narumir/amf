@@ -31,7 +31,7 @@ export class AMF0Deserialize {
             case AMF0DataType.REFERENCE_MARKER:
                 return this.readReferenceMarker();
             case AMF0DataType.ECMA_ARRAY_MARKER:
-
+                return this.readECMAArrayMarker();
             case AMF0DataType.OBJECT_END_MARKER:
                 return type;
             case AMF0DataType.STRICT_ARRAY_MARKER:
@@ -96,9 +96,19 @@ export class AMF0Deserialize {
         return value;
     }
 
-    private readStrictArrayMarker() {
+    private readECMAArrayMarker() {
         this.readUint32();
+        return this.readObjectMarker();
+    }
 
+    private readStrictArrayMarker() {
+        const arr: any[] = [];
+        for (let len = this.readUint32(); len; len--) {
+            const key = this.readStringMarker();
+            const val = this.readData();
+            arr.push(val);
+        }
+        return arr;
     }
 
     private readDateMarker() {
@@ -119,16 +129,7 @@ export class AMF0Deserialize {
     private readTypedObjectMarker() {
         const name = this.readStringMarker();
         const obj = createDynamicNameObject(name);
-        const ref: any = {};
-        while (true) {
-            const key = this.readStringMarker();
-            const value = this.readData();
-            if (value === AMF0DataType.OBJECT_END_MARKER) {
-                break;
-            }
-            ref[key] = value;
-        }
-        Object.assign(obj, ref);
+        Object.assign(obj, this.readObjectMarker());
         return obj;
     }
 
