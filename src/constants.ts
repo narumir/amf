@@ -1,8 +1,3 @@
-export enum AMFEncoding {
-    AMF_0 = 0,
-    AMF_3 = 3,
-}
-
 export enum AMF0DataType {
     NUMBER_MARKER = 0x00,
     BOOLEAN_MARKER = 0x01,
@@ -25,7 +20,6 @@ export enum AMF0DataType {
 }
 
 export const AMF0_NORMAL_MAX_SIZE = 65536;
-
 
 export enum AMF0Marker {
     NUMBER = "number",
@@ -113,14 +107,3 @@ export type AMF0Type =
     AMF0XMLDocument |
     AMF0TypedObject |
     AMF0AVMPlusObject;
-
-
-const data: AMF0Type = {
-    marker: AMF0Marker.OBJECT,
-    value: {
-        test: {
-            marker: AMF0Marker.NUMBER,
-            value: 0,
-        }
-    }
-};

@@ -5,3 +5,6 @@ export {
 export {
     AMF0Serialize
 } from "./serialize";
+export {
+    AMF0Deserialize,
+} from "./deserialize";
