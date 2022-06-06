@@ -15,11 +15,3 @@ test("Deserialize data is true(Boolean)", () => {
     const result = deserialize.readData();
     expect(result).toEqual(true);
 });
-
-test("Deserialize data is true(Boolean)", () => {
-    const data = Buffer.from([0x01, 0x01]);
-    const deserialize = new AMF0Deserialize(data);
-    const result = deserialize.readData();
-    expect(result).toEqual(true);
-});
-
