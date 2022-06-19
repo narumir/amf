@@ -68,10 +68,9 @@ export class AMF0Deserialize {
 
     private readStringMarker() {
         const len = this.readUInt16();
-        const buf = Buffer.alloc(len);
-        this.data.copy(buf, 0, this.cursor, this.cursor + len);
+        const str = this.data.toString("utf8", this.cursor, this.cursor + len);
         this.cursor += len;
-        return buf.toString();
+        return str;
     }
 
     private readObjectMarker() {
@@ -120,10 +119,9 @@ export class AMF0Deserialize {
 
     private readLongStringMarker() {
         const len = this.readUInt16();
-        const buf = Buffer.alloc(len, 0);
-        this.data.copy(buf, 0, this.cursor, this.cursor + len);
+        const str = this.data.toString("utf-8", this.cursor, this.cursor + len);
         this.cursor += len;
-        return buf.toString();
+        return str;
     }
 
     private readTypedObjectMarker() {
