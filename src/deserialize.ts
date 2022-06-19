@@ -1,9 +1,6 @@
 import {
     AMF0DataType,
 } from "./constants";
-import {
-    createDynamicNameObject,
-} from "./util";
 
 export class AMF0Deserialize {
     private cursor: number = 0;
@@ -126,7 +123,7 @@ export class AMF0Deserialize {
 
     private readTypedObjectMarker() {
         const name = this.readStringMarker();
-        const obj = createDynamicNameObject(name);
+        const obj: Record<string, any> = { __name: name };
         Object.assign(obj, this.readObjectMarker());
         return obj;
     }
