@@ -35,8 +35,9 @@ export class AMF0Serialize {
         if (withMarker) {
             this.writeUInt8(AMF0DataType.STRING_MARKER);
         }
-        this.writeUInt16(data.length);
-        this.writeBuffer(data);
+        const buf = Buffer.from(data);
+        this.writeUInt16(buf.length);
+        this.buffer = Buffer.concat([this.buffer, buf]);
     }
 
     private writeObjectMarker(data: any) {
@@ -115,8 +116,9 @@ export class AMF0Serialize {
         if (withMarker) {
             this.writeUInt8(AMF0DataType.LONG_STRING_MARKER);
         }
-        this.writeUInt16(data.length);
-        this.writeBuffer(data);
+        const buf = Buffer.from(data);
+        this.writeUInt16(buf.length);
+        this.buffer = Buffer.concat([this.buffer, buf]);
     }
 
     private writeUnsupportMarker() {
@@ -220,11 +222,6 @@ export class AMF0Serialize {
         const buf = Buffer.alloc(4, 0);
         buf.writeUint32BE(data);
         this.buffer = Buffer.concat([this.buffer, buf]);
-    }
-
-    private writeBuffer(data: WithImplicitCoercion<string | Uint8Array | number[]>) {
-        const buf = Buffer.from(data);
-        this.buffer = Buffer.concat([this.buffer, buf])
     }
 
     private isObject(data: any) {
