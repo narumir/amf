@@ -1,9 +1,6 @@
 import {
     AMF0DataType,
 } from "./constants";
-import {
-    createDynamicNameObject,
-} from "./util";
 
 export class AMF0Deserialize {
     private cursor: number = 0;
@@ -68,10 +65,9 @@ export class AMF0Deserialize {
 
     private readStringMarker() {
         const len = this.readUInt16();
-        const buf = Buffer.alloc(len);
-        this.data.copy(buf, 0, this.cursor, this.cursor + len);
+        const str = this.data.toString("utf8", this.cursor, this.cursor + len);
         this.cursor += len;
-        return buf.toString();
+        return str;
     }
 
     private readObjectMarker() {
@@ -120,15 +116,14 @@ export class AMF0Deserialize {
 
     private readLongStringMarker() {
         const len = this.readUInt16();
-        const buf = Buffer.alloc(len, 0);
-        this.data.copy(buf, 0, this.cursor, this.cursor + len);
+        const str = this.data.toString("utf-8", this.cursor, this.cursor + len);
         this.cursor += len;
-        return buf.toString();
+        return str;
     }
 
     private readTypedObjectMarker() {
         const name = this.readStringMarker();
-        const obj = createDynamicNameObject(name);
+        const obj: Record<string, any> = { __name: name };
         Object.assign(obj, this.readObjectMarker());
         return obj;
     }
