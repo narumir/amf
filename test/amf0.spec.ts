@@ -3,7 +3,7 @@ import {
     AMF0Deserialize,
     AMF0Marker,
     AMF0Type,
-} from "./index";
+} from "src/index";
 
 test("Serialize AMF0 number", () => {
     const data: AMF0Type = {
