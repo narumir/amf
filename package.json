@@ -1,5 +1,5 @@
 {
-  "name": "node-amf",
+  "name": "@narumir/node-amf",
   "version": "0.0.1",
   "description": "Action Message Format for NodeJS",
   "main": "build/index.js",
