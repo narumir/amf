@@ -150,6 +150,9 @@ export class AMF0Serialize {
         if (data == null) {
             throw new Error("Unknown data.");
         }
+        if (data.marker == null) {
+            return this.writeWithoutMarker(data);
+        }
         switch (data.marker) {
             case AMF0Marker.NUMBER:
                 if (typeof data.value !== "number") {
@@ -198,10 +201,45 @@ export class AMF0Serialize {
                 }
                 return this.writeTypedObjectMarker(data.value);
             case AMF0Marker.AVM_PLUS_OBJECT:
-                // TODO    
+                // TODO
                 return;
             default:
                 break;
+        }
+        return this.writeUnsupportMarker();
+    }
+
+    private writeWithoutMarker(data: any) {
+        if (data === null) {
+            return this.writeNullMarker();
+        }
+        if (data === undefined) {
+            return this.writeUndefinedMarker();
+        }
+        if (typeof data === "number") {
+            return this.writeNumberMarker(data);
+        }
+        if (typeof data === "boolean") {
+            return this.writeBooleanMarker(data);
+        }
+        if (typeof data === "string") {
+            return data.length > AMF0_NORMAL_MAX_SIZE
+                ? this.writeLongStringMarker(data)
+                : this.writeStringMarker(data);
+        }
+        if (data instanceof Date) {
+            return this.writeDateMarker(data)
+        }
+        if (Array.isArray(data)) {
+            return this.isStrictArray(data)
+                ? this.writeStrictArrayMarker(data)
+                : this.writeECMAArrayMarker(data);
+        }
+        if (this.isObject(data)) {
+            return this.writeObjectMarker(data);
+        }
+        if (this.isTypedObject(data)) {
+            return this.writeTypedObjectMarker(data);
         }
         return this.writeUnsupportMarker();
     }
@@ -251,6 +289,17 @@ export class AMF0Serialize {
             return false;
         }
         if (data.constructor.name === "Object") {
+            return false;
+        }
+        return true;
+    }
+
+    private isStrictArray(data: any[]) {
+        let length = 0;
+        for (const _ in data) {
+            length += 1;
+        }
+        if (data.length !== length) {
             return false;
         }
         return true;
